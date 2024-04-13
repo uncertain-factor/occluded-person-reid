@@ -1,0 +1,64 @@
+入口文件：train_clipreid的main函数：
+
+加载配置文件，加载数据集，其中
+train_clipreid.py 69行 make_dataloader函数:获取训练集（用于阶段2），训练normal集（用于阶段1）和val集的数据加载器，测试集的大小，行人数，相机数，视图个数（1）
+make_dataloader.py 63行 根据数据集路径创建OCC_DukeMTMCreID类对象dataset
+datasets\occ_duke.py 47行 _process_dir函数：创建训练集train，测试集query，参考集gallery（bounding test）的数据集对象：（数据集item为（文件路径，行人id，相机id，1））
+                     60行 get_imagedata_info函数：统计三个子数据集的信息：行人id数，图像总数，采用相机数，通道数（为1）
+make_dataloader.py 65行 根据训练数据集创建两个ImageDataset对象train_set和train_set_normal，传入对应的图像处理函数，数据集item为（图像本身，行人id，相机id，1，图像名）
+make_dataloader.py 85行 为训练集创建数据加载器类对象train_loader，batch大小为64，8个进程随机采样，每个id采4张照片
+make_dataloader.py 99行 合并测试集和参考集，创建ImageDataset对象val集
+make_dataloader.py 101行 为val集创建数据加载器类对象val_loader
+make_dataloader.py 105行 为train_normal集创建数据加载器类对象train_loader_normal
+train_clipreid.py 71行 make_modal函数：传入配置文件，行人数，相机数，视图个数（1），建立模型
+make_modal_clipreid.py 170行  根据行人数，相机数，视图个数（1），配置文件创建build_transformer类对象
+make_modal_clipreid.py 53行 __init__函数：初始化模型的变量
+                       70行-73行 创建全连接层
+                       75行-80行 创建归一化层
+                       82行 根据图像裁剪窗口移动步长计算窗口矩阵的高和宽
+                       85行 load_clip_to_cpu函数：下载clip模型
+                       88行 将clip预训练好的vit模型传给图像编码器
+                       104行 为文本描述创建模型，优化learnable context
+                       105行 将clip的transformer编码器传给文本编码器（包括位置嵌入，归一化层，transformer层，文本投影层）
+train_clipreid.py 71行 make_modal函数：传入配置文件，行人数，相机数，视图个数（1），建立模型
+make_modal_clipreid.py 170行  根据行人数，相机数，视图个数（1），配置文件创建build_transformer类对象
+make_modal_clipreid.py 53行 __init__函数：初始化模型的变量
+                       70行-73行 创建全连接层
+                       75行-80行 创建归一化层
+                       82行 根据图像裁剪窗口移动步长计算窗口矩阵的高和宽
+                       85行 load_clip_to_cpu函数：下载clip模型
+                       88行 将clip预训练好的vit模型传给图像编码器
+                       104行 创建PromptLearner提示学习器
+                       105行 创建TextEncoder模型传给模型的文本编码器
+train_clipreid.py 73行 make_loss函数：创建模型损失函数
+make_loss.py 16行 CenterLoss函数：中心损失函数，初始化形状为（n_class,feat_dim）的张量作为模型参数
+             22行 TripletLoss函数：三元组损失函数，定义了边界值和更难挖掘因子（hard_factor）
+             29行 CrossEntropyLabelSmooth函数：定义交叉熵损失函数xent，带有标签平滑正则化，减少模型对于训练集的过拟合
+             37行 定义loss_func函数：先后计算交叉熵损失，三元组损失和图像到文本的损失，最后计算总损失，返回总损失loss和中心损失函数center_criterion
+train_clipreid.py 75行 make_optimizer_1stage函数：创建阶段1的优化器
+make_optimizer_prompt.py __init__函数：创建有关参数的字典并选择合适的优化器（adam）创建，最后返回优化器
+train_clipreid.py 76行 create_scheduler函数：创建动态调整学习率的scheduler任务调度器
+schediler_factory.py 9行 创建CosineRSScheduler类对象
+cosine_lr.py 26行 __init__函数：42行 初始化父类Scheduler
+scheduler.py 25行 __init__函数：获取优化器的参数组，并用lr字段的值为每个参数组设置并初始化init_lr新参数字段
+cosine_lr.py 26行 __init__函数：52行 设置一些学习率相关的变量，做预热阶段的学习率处理
+schediler_factory.py 25行 create_scheduler函数：返回调度器对象
+train_clipreid.py 79行 do_train_stage1函数：训练阶段1
+process_clipreid_stage1.py 12行 do_train_stage1函数：开始训练
+                           33行 创建AverageMeter对象loss_meter
+                           35行 创建SupConLoss对象xent
+loss_supcontrast.py 对比学习损失
+train_clipreid.py 88行 make_optimizer_2stage函数，创建第二阶段的优化器和中心损失的优化器
+train_clipreid.py 90行 WarmupMultiStepLR函数，创建第二阶段的调度器
+
+
+
+关于gallery：
+在图像数据集的上下文中，"gallery"通常指的是一个已知身份或标注好的图像集合，这些图像用于与测试图像进行匹配。
+"Gallery"在这个语境下有时也被称为“注册集”或“参考集”，它的作用类似于一个数据库，其中包含了已经注册的图像，
+每张图像都与其对应的身份绑定。在测试过程中，新的图像（通常称为"probe"或“探针”）会与"gallery"中的图像进行比对，
+以确定其身份。例如，在一个人脸识别系统中，每个人都会在系统中注册几张自己的脸的图像，当需要识别一个新的人脸图像时，
+系统会将其与"gallery"中的图像进行匹配，以验证身份。
+此外，在ReID（人物重识别）任务中，"gallery set"是用于与"query set"中的图像进行匹配的已知个体图像集合。
+这个任务的目的是识别出在"gallery set"中与"query set"中的每张图像相同身份的个体。
+总的来说，"gallery"是一个重要的概念，它在图像识别和分类任务中起到了参照和比对的作用，帮助模型识别新的图像数据。
