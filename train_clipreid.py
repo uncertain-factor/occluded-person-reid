@@ -67,7 +67,7 @@ if __name__ == '__main__':
     # 是否进行分布式训练
     if cfg.MODEL.DIST_TRAIN:
         torch.distributed.init_process_group(backend='nccl', init_method='env://')
-    # 获取训练集，训练normal集和val验证集（query+gallery）的数据加载器，测试集的样本数量，行人数，相机数，视图个数（1）
+    # 获取训练阶段2（打乱处理），训练阶段1（常规处理），val验证集（query+gallery）的数据加载器，测试集的样本数量，行人数，相机数，视图个数（1）
     train_loader_stage2, train_loader_stage1, val_loader, num_query, num_classes, camera_num, view_num = make_dataloader(cfg)
     # 根据配置文件，行人，相机，视图个数建立模型，模型包含image部分（image encoder）和text部分（prompt learning和text encoder），可提取图像和文本特征
     model = make_model(cfg, num_class=num_classes, camera_num=camera_num, view_num=view_num)

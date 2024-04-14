@@ -84,7 +84,7 @@ def do_train_stage1(cfg,
             target = labels_list[b_list]
             image_features = image_features_list[b_list]
             with amp.autocast(enabled=True):
-                # 获取图像标签对应的文本特征
+                # 获取图像标签对应的相同数量的文本特征
                 text_features = model(label=target, get_text=True)
             # 计算两个方向的损失（从图像到文本和从文本到图像）
             loss_i2t = xent(image_features, text_features, target, target)

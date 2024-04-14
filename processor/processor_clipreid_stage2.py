@@ -44,7 +44,7 @@ def do_train_stage2(cfg,
     # 损失和准确率的计量器
     loss_meter = AverageMeter()
     acc_meter = AverageMeter()
-    # 创建一个评估器对象，用于评估模型性能。输入测试集的样本数量，，yes
+    # 创建一个评估器对象，用于评估模型性能。输入测试集的样本数量，yes
     evaluator = R1_mAP_eval(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)
     scaler = amp.GradScaler()  # 创建一个用于混合精度训练的 GradScaler 对象
     xent = SupConLoss(device)  # 对比学习损失函数
@@ -106,7 +106,7 @@ def do_train_stage2(cfg,
                 target_view = None
             # 使用自动混合精度（Automatic Mixed Precision，AMP）进行计算，加速训练。
             with amp.autocast(enabled=True):
-                # 输入图像数据和标签得到一批图像数据预测真实标签的预测分数logits，
+                # 输入打乱的图像数据和标签得到一批图像数据预测真实标签的预测分数logits，
                 # 组合特征（图像编码器最后一个transformer输出，全部transformer输出，投影降维输出）和 投影降维图像特征
                 score, feat, image_features = model(x=img, label=target, cam_label=target_cam, view_label=target_view)
                 # 这里计算了投影降维图像特征与文本特征之间的点积得到图像到文本类别的预测logits。

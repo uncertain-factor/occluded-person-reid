@@ -27,7 +27,7 @@ class BaseDataset(object):
     """
     Base class of reid dataset
     """
-    #item为（文件路径，行人id，相机id，1），获取数据集的行人数，图像数，相机数，跟踪序列号
+    #item为【图像绝对路径，行人id，相机id，1】，获取数据集的行人种类数，图像样本数，相机种类数，1
     def get_imagedata_info(self, data):
         pids, cams, tracks = [], [], []
         for _, pid, camid, trackid in data:
