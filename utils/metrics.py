@@ -114,16 +114,16 @@ class R1_mAP_eval():
             print("The test feature is normalized")
             # 对每一行的feat进行层归一化，对每个维度的元素除以所有元素的平方和的开根
             feats = torch.nn.functional.normalize(feats, dim=1, p=2)  # along channel
-        # query 取出测试集的样本特征，pid和camid
+        # query 取出测试集的样本特征qf，pid和camid
         qf = feats[:self.num_query]
         q_pids = np.asarray(self.pids[:self.num_query])
         q_camids = np.asarray(self.camids[:self.num_query])
-        # gallery 取出参考集的样本特征，pid和camid
+        # gallery 取出参考集的样本特征gf，pid和camid
         gf = feats[self.num_query:]
         g_pids = np.asarray(self.pids[self.num_query:])
 
         g_camids = np.asarray(self.camids[self.num_query:])
-        if self.reranking:
+        if self.reranking:  # no
             print('=> Enter reranking')
             # distmat = re_ranking(qf, gf, k1=20, k2=6, lambda_value=0.3)
             distmat = re_ranking(qf, gf, k1=50, k2=15, lambda_value=0.3)

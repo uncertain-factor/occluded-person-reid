@@ -238,7 +238,7 @@ def do_inference(cfg,
 
     model.eval()
     img_path_list = []
-
+    # 批量加载验证集的图片，行人id，相机id，1，图片路径，然后传入评估器
     for n_iter, (img, pid, camid, camids, target_view, imgpath) in enumerate(val_loader):
         with torch.no_grad():
             img = img.to(device)
@@ -250,10 +250,11 @@ def do_inference(cfg,
                 target_view = target_view.to(device)
             else:
                 target_view = None
+            # 输入图片，提取图像的组合特征feat，将feat，行人id，相机id传入评估器
             feat = model(img, cam_label=camids, view_label=target_view)
             evaluator.update((feat, pid, camid))
             img_path_list.extend(imgpath)
-
+    # 评估器根据数据评估模型性能
     cmc, mAP, _, _, _, _, _ = evaluator.compute()
     logger.info("Validation Results ")
     logger.info("mAP: {:.1%}".format(mAP))

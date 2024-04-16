@@ -37,7 +37,7 @@ if __name__ == "__main__":
     logger.info("Running with config:\n{}".format(cfg))
 
     os.environ['CUDA_VISIBLE_DEVICES'] = cfg.MODEL.DEVICE_ID
-
+    # 获取训练阶段2（打乱处理），训练阶段1（常规处理），val验证集（query + gallery）的数据加载器，测试集的样本数量，训练集行人数，相机数，视图个数（1）
     train_loader, train_loader_normal, val_loader, num_query, num_classes, camera_num, view_num = make_dataloader(cfg)
 
     model = make_model(cfg, num_class=num_classes, camera_num=camera_num, view_num = view_num)
