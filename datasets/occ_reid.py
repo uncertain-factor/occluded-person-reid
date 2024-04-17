@@ -29,27 +29,35 @@ class OCC_ReID(BaseImageDataset):
         # 获取数据集的文件路径：/home/zyj/workspace/workspace/CLIP-ReID-zhy/
         super(OCC_ReID, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
-        # self.dataset_url = 'http://vision.cs.duke.edu/DukeMTMC/data/misc/DukeMTMC-reID.zip'  # 无需用到
-        # 三个数据集的绝对路径
-        self.train_dir = osp.join(self.dataset_dir, 'Occluded_Duke/bounding_box_train')
-        self.query_dir = osp.join(self.dataset_dir, 'Occluded_Duke/query')
-        self.gallery_dir = osp.join(self.dataset_dir, 'Occluded_Duke/bounding_box_test')
+        # 全身图训练集
+        self.whole_train_dir = osp.join(self.dataset_dir, 'whole_train')
+        # 遮挡图训练集
+        self.occ_train_dir = osp.join(self.dataset_dir, 'occ_train')
+        # 遮挡图测试集
+        self.query_dir = osp.join(self.dataset_dir, 'occ_test')
+        # 参考集(200张全身图)
+        self.gallery_dir = osp.join(self.dataset_dir, 'whole_test')
         self.pid_begin = pid_begin
 
-        self._download_data()  # 省略
         self._check_before_run()  # 判断数据集是否存在
 
         # 创建训练集，测试集，查询集，展示集的数据集对象，其中train数据集的行人id被重置，是一个dataset列表【图像绝对路径，行人id，相机id，1】
-        train = self._process_dir(self.train_dir, relabel=True)
+        # train = self._process_dir(self.train_dir, relabel=True)
+        # query = self._process_dir(self.query_dir, relabel=False)
+        # gallery = self._process_dir(self.gallery_dir, relabel=False)
+
+        whole_train = self._process_dir(self.whole_train_dir, relabel=False)
+        occ_train = self._process_dir(self.whole_train_dir, relabel=False)
         query = self._process_dir(self.query_dir, relabel=False)
         gallery = self._process_dir(self.gallery_dir, relabel=False)
 
         # 输出具体日志
-        if verbose:
-            print("=> DukeMTMC-reID loaded")
-            self.print_dataset_statistics(train, query, gallery)
+        # if verbose:
+        #     print("=> DukeMTMC-reID loaded")
+        #     self.print_dataset_statistics(train, query, gallery)
 
-        self.train = train
+        self.whole_train = whole_train
+        self.occ_train = occ_train
         self.query = query
         self.gallery = gallery
         # 统计数据集的行人id数，图像样本数，摄像头id数，视图数（为1）
@@ -59,24 +67,6 @@ class OCC_ReID(BaseImageDataset):
             self.query)
         self.num_gallery_pids, self.num_gallery_imgs, self.num_gallery_cams, self.num_gallery_vids = self.get_imagedata_info(
             self.gallery)
-
-    # 从网上下载数据集，若目录中已存在，则直接返回
-    def _download_data(self):
-        if osp.exists(self.dataset_dir):
-            print("This dataset has been downloaded.")
-            return
-
-        print("Creating directory {}".format(self.dataset_dir))
-        mkdir_if_missing(self.dataset_dir)
-        fpath = osp.join(self.dataset_dir, osp.basename(self.dataset_url))
-
-        print("Downloading DukeMTMC-reID dataset")
-        urllib.request.urlretrieve(self.dataset_url, fpath)
-
-        print("Extracting files")
-        zip_ref = zipfile.ZipFile(fpath, 'r')
-        zip_ref.extractall(self.dataset_dir)
-        zip_ref.close()
 
     # 检查路径文件是否存在
     def _check_before_run(self):
@@ -90,10 +80,10 @@ class OCC_ReID(BaseImageDataset):
         if not osp.exists(self.gallery_dir):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
 
-    # 创建数据集，item为（图像绝对路径，行人id，相机id，1），其中行人id可能被重置过
+    # 创建数据集，item为（图像绝对路径，行人id，相机id，1），根据relabel选择是否重置行人id
     def _process_dir(self, dir_path, relabel=False):
-        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))  # 获取所有图像路径
-        pattern = re.compile(r'([-\d]+)_c(\d)')  # 创建正则表达式 匹配图像名：0001_c2_f0046182.jpg
+        img_paths = glob.glob(osp.join(dir_path, '*.tif'))  # 获取所有图像路径
+        pattern = re.compile(r'([-\d]+)_(\d)')  # 创建正则表达式 匹配图像名：161_01.tif
         # 对于所有图像，提取出人物id，转换为int类型然后装进set集合中，最后创建id和label的映射{key：pid，value：label}
         pid_container = set()
         for img_path in img_paths:
@@ -106,10 +96,11 @@ class OCC_ReID(BaseImageDataset):
         cam_container = set()
         # 创建数据集，item为（图像绝对路径，行人id，相机id，1）
         for img_path in img_paths:
+            # 将图片名的行人id和相机id提取出来并转化为整型
             pid, camid = map(int, pattern.search(img_path).groups())
-            assert 1 <= camid <= 8  # 相机id必须在1-8之间，否则抛出异常
-            camid -= 1  # index starts from 0
-            if relabel: pid = pid2label[pid]  # 将pid转化为从0开始且连续的label
+            assert 1 <= camid <= 5  # 相机id必须在1-5之间，否则抛出异常
+            camid -= 1  # 相机id从0开始
+            if relabel: pid = pid2label[pid]  # 如何设置了relabel，将pid转化为从0开始且连续的label
             dataset.append((img_path, self.pid_begin + pid, camid, 1))
             cam_container.add(camid)
         print(cam_container, 'cam_container')

@@ -68,15 +68,15 @@ TEST:
   FEAT_NORM: 'yes'
 
 DATASETS:
-  NAMES: ('occ_duke')
-  ROOT_DIR: ('/home/zyj/workspace/workspace/CLIP-ReID-zhy/')
-OUTPUT_DIR: '/home/zyj/workspace/workspace/CLIP-ReID-zhy/CLIP-ReID-master/logs'
+#  NAMES: ('occ_duke')
+#  ROOT_DIR: ('/home/zyj/workspace/workspace/CLIP-ReID-zhy/')
+#OUTPUT_DIR: '/home/zyj/workspace/workspace/CLIP-ReID-zhy/CLIP-ReID-master/logs'
 
 #   NAMES: ('msmt17')
 #   ROOT_DIR: ('')
 # OUTPUT_DIR: ''
 
-#  NAMES: ('occ_reid')
-#  ROOT_DIR: ('/home/zyj/workspace/workspace/CLIP-ReID-zhy/')
-#OUTPUT_DIR: '/home/zyj/workspace/workspace/CLIP-ReID-zhy/CLIP-ReID-master/logs'
+  NAMES: ('occ_reid')
+  ROOT_DIR: ('/home/zyj/workspace/workspace/CLIP-ReID-zhy/')
+OUTPUT_DIR: '/home/zyj/workspace/workspace/CLIP-ReID-zhy/CLIP-ReID-master/logs'
 
