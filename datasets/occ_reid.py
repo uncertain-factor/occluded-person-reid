@@ -1,4 +1,3 @@
-
 import glob
 import re
 import urllib
@@ -20,7 +19,7 @@ class OCC_ReID(BaseImageDataset):
 
     Dataset statistics:
     # identities: 1404 (train + query)
-    # images:16522 (train) + 2228 (query) + 17661 (gallery)
+    # images:800 (whole train) + 800 (occ train) +  200 (occ query) + 200 (whole gallery)
     # cameras: 8
     """
     dataset_dir = 'occ_reid'
@@ -47,7 +46,7 @@ class OCC_ReID(BaseImageDataset):
         # gallery = self._process_dir(self.gallery_dir, relabel=False)
 
         whole_train = self._process_dir(self.whole_train_dir, relabel=False)
-        occ_train = self._process_dir(self.whole_train_dir, relabel=False)
+        occ_train = self._process_dir(self.occ_train_dir, relabel=False)
         query = self._process_dir(self.query_dir, relabel=False)
         gallery = self._process_dir(self.gallery_dir, relabel=False)
 
@@ -60,9 +59,9 @@ class OCC_ReID(BaseImageDataset):
         self.occ_train = occ_train
         self.query = query
         self.gallery = gallery
-        # 统计数据集的行人id数，图像样本数，摄像头id数，视图数（为1）
+        # 统计训练集的行人id数，图像样本数，摄像头id数，视图数（为1）
         self.num_train_pids, self.num_train_imgs, self.num_train_cams, self.num_train_vids = self.get_imagedata_info(
-            self.train)
+            self.whole_train)
         self.num_query_pids, self.num_query_imgs, self.num_query_cams, self.num_query_vids = self.get_imagedata_info(
             self.query)
         self.num_gallery_pids, self.num_gallery_imgs, self.num_gallery_cams, self.num_gallery_vids = self.get_imagedata_info(
@@ -73,8 +72,10 @@ class OCC_ReID(BaseImageDataset):
         """Check if all files are available before going deeper"""
         if not osp.exists(self.dataset_dir):
             raise RuntimeError("'{}' is not available".format(self.dataset_dir))
-        if not osp.exists(self.train_dir):
-            raise RuntimeError("'{}' is not available".format(self.train_dir))
+        if not osp.exists(self.whole_train_dir):
+            raise RuntimeError("'{}' is not available".format(self.whole_train_dir))
+        if not osp.exists(self.occ_train_dir):
+            raise RuntimeError("'{}' is not available".format(self.occ_train_dir))
         if not osp.exists(self.query_dir):
             raise RuntimeError("'{}' is not available".format(self.query_dir))
         if not osp.exists(self.gallery_dir):
