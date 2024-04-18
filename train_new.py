@@ -88,7 +88,7 @@ if __name__ == '__main__':
         scheduler_1stage,
         args.local_rank
     )
-    # make_optimizer_2stage函数，创建第二阶段的adam优化器和中心损失的优化器
+    # 创建第二阶段的adam优化器和中心损失的优化器
     optimizer_2stage, optimizer_center_2stage = make_optimizer_2stage(cfg, model, center_criterion)
     # 针对adam优化器创建学习率调度器
     scheduler_2stage = WarmupMultiStepLR(optimizer_2stage, cfg.SOLVER.STAGE2.STEPS, cfg.SOLVER.STAGE2.GAMMA,
@@ -99,7 +99,8 @@ if __name__ == '__main__':
         cfg,
         model,
         center_criterion,
-        train_loader_stage2,
+        whole_train_loader_stage2,
+        occ_train_loader_stage2,
         val_loader,
         optimizer_2stage,
         optimizer_center_2stage,

@@ -57,9 +57,9 @@ def make_loss(cfg, num_classes):  # modified by gu
                         loss = cfg.MODEL.I2T_LOSS_WEIGHT * I2TLOSS + loss
                     if whole_img_proj !=None and occ_img_proj !=None:
                         # 计算两个方向的损失（从全身到遮挡和从遮挡到全身）
-                        loss_i2t = contrast(whole_img_proj, occ_img_proj, whole_img_label, occ_img_label)
-                        loss_t2i = contrast(occ_img_proj, whole_img_proj, occ_img_label, whole_img_label)
-                        CONTRAST_LOSS = loss_i2t + loss_t2i
+                        loss_w2o = contrast(whole_img_proj, occ_img_proj, whole_img_label, occ_img_label)
+                        loss_o2w = contrast(occ_img_proj, whole_img_proj, occ_img_label, whole_img_label)
+                        CONTRAST_LOSS = loss_w2o + loss_o2w
                         loss += CONTRAST_LOSS
                     return loss
             else:

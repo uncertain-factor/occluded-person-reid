@@ -88,6 +88,7 @@ def make_dataloader(cfg):
             sampler=SequentialSampler(dataset.whole_train),
             collate_fn=train_collate_fn
         )
+        # 遮挡图训练数据集
         occ_train_loader_stage2 = DataLoader(
             train_set_occ,
             batch_size=cfg.SOLVER.STAGE2.IMS_PER_BATCH,

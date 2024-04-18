@@ -14,7 +14,8 @@ from loss.supcontrast import SupConLoss
 def do_train_stage2(cfg,
                     model,
                     center_criterion,   # 该参数无作用
-                    train_loader_stage2,
+                    whole_train_loader_stage2,
+                    occ_train_loader_stage2,
                     val_loader,
                     optimizer,
                     optimizer_center,
