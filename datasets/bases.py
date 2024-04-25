@@ -46,7 +46,7 @@ class BaseDataset(object):
     def print_dataset_statistics(self):
         raise NotImplementedError
 
-
+# 总数据集，可统计训练集，测试集和图库集信息
 class BaseImageDataset(BaseDataset):
     """
     Base class of image reid dataset
@@ -66,7 +66,7 @@ class BaseImageDataset(BaseDataset):
         print("  gallery  | {:5d} | {:8d} | {:9d}".format(num_gallery_pids, num_gallery_imgs, num_gallery_cams))
         print("  ----------------------------------------")
 
-
+# 从数据集路径读取图片数据并应用转化函数
 class ImageDataset(Dataset):
     def __init__(self, dataset, transform=None):
         self.dataset = dataset

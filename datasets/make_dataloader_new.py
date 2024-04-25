@@ -69,7 +69,7 @@ def make_dataloader(cfg):
     num_workers = cfg.DATALOADER.NUM_WORKERS
 
     dataset = __factory[cfg.DATASETS.NAMES](root=cfg.DATASETS.ROOT_DIR)
-    # 进行了非常规处理的全身图训练集(用于阶段二️)
+    # 进行了非常规处理的全身图训练集(用于阶段二)
     train_set_whole = ImageDataset(dataset.whole_train, train_transforms)
     # 进行了常规处理的遮挡图训练集（用于阶段二）
     train_set_occ = ImageDataset(dataset.occ_train, val_transforms)
