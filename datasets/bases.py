@@ -75,6 +75,7 @@ class ImageDataset(Dataset):
     def __len__(self):
         return len(self.dataset)
 
+    # 根据索引获取样本对象的详细信息（图片数据，行人id，相机id，图片名）
     def __getitem__(self, index):
         img_path, pid, camid, trackid = self.dataset[index]
         img = read_image(img_path)
@@ -83,3 +84,26 @@ class ImageDataset(Dataset):
             img = self.transform(img)
 
         return img, pid, camid, trackid, img_path.split('/')[-1]
+
+
+class PairImageDataset(Dataset):
+    def __init__(self, dataset1, dataset2, transform1=None, transform2=None):
+        self.dataset1 = dataset1
+        self.transform1 = transform1
+        self.dataset2 = dataset2
+        self.transform2 = transform2
+
+    def __len__(self):
+        return len(self.dataset1)
+
+    # 根据索引获取样本对象的详细信息（图片数据1，图片数据2，行人id，相机id，图片名）
+    def __getitem__(self, index):
+        img_path1, pid1, camid1, trackid1 = self.dataset1[index]
+        img_path2, _, _, _ = self.dataset2[index]
+        img1 = read_image(img_path1)
+        img2 = read_image(img_path2)
+        if self.transform1 is not None:
+            img1 = self.transform(img1)
+        if self.transform2 is not None:
+            img2 = self.transform(img2)
+        return img1, img2, pid1, camid1, trackid1, img_path1.split('/')[-1]

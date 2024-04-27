@@ -40,11 +40,7 @@ class OCC_ReID(BaseImageDataset):
 
         self._check_before_run()  # 判断数据集是否存在
 
-        # 创建训练集，测试集，查询集，展示集的数据集对象，其中train数据集的行人id被重置，是一个dataset列表【图像绝对路径，行人id，相机id，1】
-        # train = self._process_dir(self.train_dir, relabel=True)
-        # query = self._process_dir(self.query_dir, relabel=False)
-        # gallery = self._process_dir(self.gallery_dir, relabel=False)
-
+        # 返回一个列表，内容为（图像绝对路径，行人id，相机id，1）
         whole_train = self._process_dir(self.whole_train_dir, relabel=False)
         occ_train = self._process_dir(self.occ_train_dir, relabel=False)
         query = self._process_dir(self.query_dir, relabel=False)
@@ -59,7 +55,7 @@ class OCC_ReID(BaseImageDataset):
         self.occ_train = occ_train
         self.query = query
         self.gallery = gallery
-        # 统计训练集的行人id数，图像样本数，摄像头id数，视图数（为1）
+        # 统计训练集，测试集，图库集的行人id数，图像样本数，摄像头id数，视图数（为1）
         self.num_train_pids, self.num_train_imgs, self.num_train_cams, self.num_train_vids = self.get_imagedata_info(
             self.whole_train)
         self.num_query_pids, self.num_query_imgs, self.num_query_cams, self.num_query_vids = self.get_imagedata_info(

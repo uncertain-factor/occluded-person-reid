@@ -4,6 +4,7 @@ import copy
 import random
 import numpy as np
 
+
 class RandomIdentitySampler(Sampler):
     """
     Randomly sample N identities, then for each identity,
@@ -18,11 +19,13 @@ class RandomIdentitySampler(Sampler):
         self.data_source = data_source
         self.batch_size = batch_size
         self.num_instances = num_instances
-        self.num_pids_per_batch = self.batch_size // self.num_instances
-        self.index_dic = defaultdict(list) #dict with list value
-        #{783: [0, 5, 116, 876, 1554, 2041],...,}
+        self.num_pids_per_batch = self.batch_size // self.num_instances  # 每批次取的行人id
+        self.index_dic = defaultdict(list)  # dict with list value
+        # 遍历数据列表，创建行人id为键，索引为值的数据字典，每个id对应多个索引
+        # {783: [0, 5, 116, 876, 1554, 2041],...,}
         for index, (_, pid, _, _) in enumerate(self.data_source):
             self.index_dic[pid].append(index)
+        # 获取行人id列表
         self.pids = list(self.index_dic.keys())
 
         # estimate number of examples in an epoch
@@ -64,4 +67,3 @@ class RandomIdentitySampler(Sampler):
 
     def __len__(self):
         return self.length
-

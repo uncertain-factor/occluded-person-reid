@@ -2,7 +2,7 @@ import torch
 import torchvision.transforms as T
 from torch.utils.data import DataLoader, SequentialSampler
 
-from .bases import ImageDataset
+from .bases import ImageDataset, PairImageDataset
 from timm.data.random_erasing import RandomErasing
 from .sampler import RandomIdentitySampler
 from .dukemtmcreid import DukeMTMCreID
@@ -26,12 +26,12 @@ __factory = {
 }
 
 
-# 对每个批次的数据进行合并，合并每个维度的数据形成一维张量
+# 将一个批次里所有样本的各维度数据堆叠成列表或张量，在数据加载器加载一个批次的数据时被调用
 def train_collate_fn(batch):
     """
     # collate_fn这个函数的输入就是一个list，list的长度是一个batch size，list中的每个元素都是__getitem__得到的结果
     """
-    # 数据集item为（文件路径，行人id，相机id，1）
+    # 返回关于图片数据，行人id，相机id，视图id的张量
     imgs, pids, camids, viewids, _ = zip(*batch)
     pids = torch.tensor(pids, dtype=torch.int64)
     viewids = torch.tensor(viewids, dtype=torch.int64)
@@ -40,6 +40,7 @@ def train_collate_fn(batch):
 
 
 def val_collate_fn(batch):
+    # 返回图片数据张量，行人id张量，相机id列表，相机id张量，图片名字张量
     imgs, pids, camids, viewids, img_paths = zip(*batch)
     viewids = torch.tensor(viewids, dtype=torch.int64)
     camids_batch = torch.tensor(camids, dtype=torch.int64)
@@ -69,18 +70,23 @@ def make_dataloader(cfg):
     num_workers = cfg.DATALOADER.NUM_WORKERS
 
     dataset = __factory[cfg.DATASETS.NAMES](root=cfg.DATASETS.ROOT_DIR)
-    # 进行了非常规处理的全身图训练集(用于阶段二)
-    train_set_whole = ImageDataset(dataset.whole_train, train_transforms)
-    # 进行了常规处理的遮挡图训练集（用于阶段二）
-    train_set_occ = ImageDataset(dataset.occ_train, val_transforms)
+    # 阶段二的成对训练集，全身集dataset1非常规处理，遮挡集dataset2常规处理
+    train_set = PairImageDataset(dataset1=dataset.whole_train,
+                                 dataset2=dataset.occ_train,
+                                 transform1=train_transforms,
+                                 transform2=val_transforms)
+    # # 进行了非常规处理的全身图训练集(用于阶段二)
+    # train_set_whole = ImageDataset(dataset.whole_train, train_transforms)
+    # # 进行了常规处理的遮挡图训练集（用于阶段二）
+    # train_set_occ = ImageDataset(dataset.occ_train, val_transforms)
     # 进行了常规处理的训练集（用于阶段一）
     train_set_whole_normal = ImageDataset(dataset.whole_train, val_transforms)
     num_classes = dataset.num_train_pids    # 训练集行人id数
-    cam_num = dataset.num_train_cams
-    view_num = dataset.num_train_vids
+    cam_num = dataset.num_train_cams    # 训练集相机数
+    view_num = dataset.num_train_vids   # 训练集视图数
 
     if 'triplet' in cfg.DATALOADER.SAMPLER:
-        # 为训练阶段2创建数据加载器，顺序取样，每批次样本为25
+        # 为训练阶段2创建数据加载器，随机取样，每批次样本为25
         # 全身图训练数据集，
         whole_train_loader_stage2 = DataLoader(
             train_set_whole,
@@ -93,6 +99,17 @@ def make_dataloader(cfg):
             train_set_occ,
             batch_size=cfg.SOLVER.STAGE2.IMS_PER_BATCH,
             sampler=SequentialSampler(dataset.occ_train),
+            collate_fn=train_collate_fn
+        )
+        # yes，为训练阶段2创建数据加载器，
+        # RandomIdentity取样器随机选取一定数量的id，每个id随机选取一定数量的图片样本
+        # 每一个batch的数量是id数与同一id样本数的乘积
+        train_loader_stage2 = DataLoader(
+            train_set,
+            batch_size=cfg.SOLVER.STAGE2.IMS_PER_BATCH,
+            sampler=RandomIdentitySampler(dataset.train, cfg.SOLVER.STAGE2.IMS_PER_BATCH,
+                                          cfg.DATALOADER.NUM_INSTANCE),
+            num_workers=num_workers,  # 加载数据的子进程数量为8
             collate_fn=train_collate_fn
         )
     else:
