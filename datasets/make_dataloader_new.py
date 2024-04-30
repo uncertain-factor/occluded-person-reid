@@ -27,7 +27,17 @@ __factory = {
 
 
 # 将一个批次里所有样本的各维度数据堆叠成列表或张量，在数据加载器加载一个批次的数据时被调用
-def train_collate_fn(batch):
+# 训练阶段二训练数据集的批处理函数
+def train2_collate_fn(batch):
+    # 返回关于图片数据，行人id，相机id，视图id的张量
+    imgs1, imags2, pids, camids, viewids, _ = zip(*batch)
+    pids = torch.tensor(pids, dtype=torch.int64)
+    viewids = torch.tensor(viewids, dtype=torch.int64)
+    camids = torch.tensor(camids, dtype=torch.int64)
+    return torch.stack(imgs1, dim=0), torch.stack(imags2, dim=0), pids, camids, viewids,
+
+# 训练阶段一训练数据集的批处理函数
+def train1_collate_fn(batch):
     """
     # collate_fn这个函数的输入就是一个list，list的长度是一个batch size，list中的每个元素都是__getitem__得到的结果
     """
@@ -38,7 +48,7 @@ def train_collate_fn(batch):
     camids = torch.tensor(camids, dtype=torch.int64)
     return torch.stack(imgs, dim=0), pids, camids, viewids,
 
-
+# 验证集数据加载器的批处理函数
 def val_collate_fn(batch):
     # 返回图片数据张量，行人id张量，相机id列表，相机id张量，图片名字张量
     imgs, pids, camids, viewids, img_paths = zip(*batch)
@@ -75,10 +85,6 @@ def make_dataloader(cfg):
                                  dataset2=dataset.occ_train,
                                  transform1=train_transforms,
                                  transform2=val_transforms)
-    # # 进行了非常规处理的全身图训练集(用于阶段二)
-    # train_set_whole = ImageDataset(dataset.whole_train, train_transforms)
-    # # 进行了常规处理的遮挡图训练集（用于阶段二）
-    # train_set_occ = ImageDataset(dataset.occ_train, val_transforms)
     # 进行了常规处理的训练集（用于阶段一）
     train_set_whole_normal = ImageDataset(dataset.whole_train, val_transforms)
     num_classes = dataset.num_train_pids    # 训练集行人id数
@@ -86,44 +92,27 @@ def make_dataloader(cfg):
     view_num = dataset.num_train_vids   # 训练集视图数
 
     if 'triplet' in cfg.DATALOADER.SAMPLER:
-        # 为训练阶段2创建数据加载器，随机取样，每批次样本为25
-        # 全身图训练数据集，
-        whole_train_loader_stage2 = DataLoader(
-            train_set_whole,
-            batch_size=cfg.SOLVER.STAGE2.IMS_PER_BATCH,
-            sampler=SequentialSampler(dataset.whole_train),
-            collate_fn=train_collate_fn
-        )
-        # 遮挡图训练数据集
-        occ_train_loader_stage2 = DataLoader(
-            train_set_occ,
-            batch_size=cfg.SOLVER.STAGE2.IMS_PER_BATCH,
-            sampler=SequentialSampler(dataset.occ_train),
-            collate_fn=train_collate_fn
-        )
-        # yes，为训练阶段2创建数据加载器，
-        # RandomIdentity取样器随机选取一定数量的id，每个id随机选取一定数量的图片样本
-        # 每一个batch的数量是id数与同一id样本数的乘积
+        # 为训练阶段2创建数据加载器，数据集为PairImageDataSet,随机取样，每批次样本为50
         train_loader_stage2 = DataLoader(
             train_set,
             batch_size=cfg.SOLVER.STAGE2.IMS_PER_BATCH,
-            sampler=RandomIdentitySampler(dataset.train, cfg.SOLVER.STAGE2.IMS_PER_BATCH,
+            sampler=RandomIdentitySampler(dataset.whole_train, cfg.SOLVER.STAGE2.IMS_PER_BATCH,
                                           cfg.DATALOADER.NUM_INSTANCE),
-            num_workers=num_workers,  # 加载数据的子进程数量为8
-            collate_fn=train_collate_fn
+            num_workers=num_workers,  # 加载数据的子进程数量为5
+            collate_fn=train2_collate_fn
         )
     else:
         print('unsupported sampler! expected softmax or triplet but got {}'.format(cfg.SAMPLER))
     # 将查询集（query）和图库集（gallery）连接起来，形成一个新的验证集（validation set）
     val_set = ImageDataset(dataset.query + dataset.gallery, val_transforms)
-    # 为验证集创建数据加载器，图像数据经过常规预处理，每批次30个样本，不打乱，加载数据的子进程数量为8，
+    # 为验证集创建数据加载器，图像数据经过常规预处理，每批次50个样本，不打乱，加载数据的子进程数量为5，
     val_loader = DataLoader(
         val_set, batch_size=cfg.TEST.IMS_PER_BATCH, shuffle=False, num_workers=num_workers,
         collate_fn=val_collate_fn
     )
-    # 为训练阶段1创建数据加载器，图像数据经过常规预处理，每批次30个样本，打乱，加载数据的子进程数量为8
+    # 为训练阶段1创建数据加载器，图像数据经过常规预处理，每批50个样本，打乱，加载数据的子进程数量为5
     train_loader_stage1 = DataLoader(
         train_set_whole_normal, batch_size=cfg.SOLVER.STAGE1.IMS_PER_BATCH, shuffle=True, num_workers=num_workers,
-        collate_fn=train_collate_fn
+        collate_fn=train1_collate_fn
     )
-    return whole_train_loader_stage2, occ_train_loader_stage2, train_loader_stage1, val_loader, len(dataset.query), num_classes, cam_num, view_num
+    return train_loader_stage2, train_loader_stage1, val_loader, len(dataset.query), num_classes, cam_num, view_num

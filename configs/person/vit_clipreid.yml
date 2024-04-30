@@ -22,12 +22,12 @@ INPUT:
 
 DATALOADER:
   SAMPLER: 'softmax_triplet'
-  NUM_INSTANCE: 4 #每个身份选择的样本数量
-  NUM_WORKERS: 8  #数据加载的进程数
+  NUM_INSTANCE: 5 #每个身份选择的样本数量,原本是4
+  NUM_WORKERS: 5  #数据加载的进程数，原本是8
 
 SOLVER:
   STAGE1:
-    IMS_PER_BATCH: 64
+    IMS_PER_BATCH: 50 # 原本是64
     OPTIMIZER_NAME: "Adam"
     BASE_LR: 0.00035
     WARMUP_LR_INIT: 0.00001
@@ -37,11 +37,11 @@ SOLVER:
     WEIGHT_DECAY_BIAS: 1e-4
     MAX_EPOCHS: 120
     CHECKPOINT_PERIOD: 120
-    LOG_PERIOD: 50
+    LOG_PERIOD: 10  # 输出日志的batch周期，原本为50
     WARMUP_EPOCHS: 5
   
   STAGE2:
-    IMS_PER_BATCH: 25 # 阶段二数据加载器的每个采样批次的大小为30，取5个id的5张照片
+    IMS_PER_BATCH: 50 # 阶段二数据加载器的每个采样批次的大小为30，取10个id的5张照片，原本是64
     OPTIMIZER_NAME: "Adam"
     BASE_LR: 0.000005
     WARMUP_METHOD: 'linear'

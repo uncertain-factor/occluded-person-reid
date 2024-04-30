@@ -40,7 +40,7 @@ class OCC_ReID(BaseImageDataset):
 
         self._check_before_run()  # 判断数据集是否存在
 
-        # 返回一个列表，内容为（图像绝对路径，行人id，相机id，1）
+        # 返回一个列表，内容为（图像绝对路径，行人id，相机id，1），不重置id
         whole_train = self._process_dir(self.whole_train_dir, relabel=False)
         occ_train = self._process_dir(self.occ_train_dir, relabel=False)
         query = self._process_dir(self.query_dir, relabel=False)
@@ -77,7 +77,7 @@ class OCC_ReID(BaseImageDataset):
         if not osp.exists(self.gallery_dir):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
 
-    # 创建数据集，item为（图像绝对路径，行人id，相机id，1），根据relabel选择是否重置行人id
+    # 创建数据集列表，item为（图像绝对路径，行人id，相机id，1），根据relabel选择是否重置行人id
     def _process_dir(self, dir_path, relabel=False):
         img_paths = glob.glob(osp.join(dir_path, '*.tif'))  # 获取所有图像路径
         pattern = re.compile(r'([-\d]+)_(\d)')  # 创建正则表达式 匹配图像名：161_01.tif

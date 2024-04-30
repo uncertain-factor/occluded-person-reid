@@ -7,6 +7,7 @@ from loss.supcontrast import SupConLoss
 
 # 两个损失函数，一个是loss_func（由三元组损失，交叉熵损失，图文相似度损失,对比损失组成），一个是中心损失center_criterion，内部随机初始化了每个类别的中心点
 def make_loss(cfg, num_classes):  # modified by gu
+    # 初始化各种损失函数
     sampler = cfg.DATALOADER.SAMPLER
     feat_dim = 2048  # 特征向量的维度
     center_criterion = CenterLoss(num_classes=num_classes, feat_dim=feat_dim, use_gpu=True)  # 创建中心损失函数 loss1
@@ -24,14 +25,15 @@ def make_loss(cfg, num_classes):  # modified by gu
     if cfg.MODEL.IF_LABELSMOOTH == 'on':
         xent = CrossEntropyLabelSmooth(num_classes=num_classes)  # 创建交叉熵损失函数 loss3
         print("label smooth on, numclasses:", num_classes)
-    contrast = SupConLoss("cuda")  # 对比损失函数
+    contrast = SupConLoss("cuda")  # 对比损失函数 loss4
     # no
     if sampler == 'softmax':
         def loss_func(score, feat, target):
             return F.cross_entropy(score, target)
-
+    # yes
     elif cfg.DATALOADER.SAMPLER == 'softmax_triplet':
-        # 计算总损失函数的计算，ID_LOSS使用的是交叉熵损失，TRI_LOSS代表三元组损失，I2TLOSS使用的是交叉熵损失，衡量图像特征与文本特征的相似度
+        # 计算总损失函数的计算，ID_LOSS使用的是图片-标签交叉熵损失，TRI_LOSS代表三元组损失，I2TLOSS使用的是图片-文本交叉熵损失，
+        # CONTRAST_LOSS使用的是全身-遮挡对比损失
         def loss_func(score, feat, target, target_cam, i2tscore=None, whole_img_proj=None, occ_img_proj=None, whole_img_label=None, occ_img_label=None):
             if cfg.MODEL.METRIC_LOSS_TYPE == 'triplet':
                 if cfg.MODEL.IF_LABELSMOOTH == 'on':

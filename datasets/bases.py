@@ -86,6 +86,7 @@ class ImageDataset(Dataset):
         return img, pid, camid, trackid, img_path.split('/')[-1]
 
 
+# 成对的图片数据集，输入样本索引，返回成对的图片
 class PairImageDataset(Dataset):
     def __init__(self, dataset1, dataset2, transform1=None, transform2=None):
         self.dataset1 = dataset1

@@ -43,6 +43,7 @@ class RandomIdentitySampler(Sampler):
         batch_idxs_dict = defaultdict(list)
 
         for pid in self.pids:
+            # 取出id的对应索引
             idxs = copy.deepcopy(self.index_dic[pid])
             # 当id的对应样本索引个数不足num_instance时，随机复制索引并打乱
             if len(idxs) < self.num_instances:
@@ -57,7 +58,7 @@ class RandomIdentitySampler(Sampler):
                     batch_idxs = []
 
         avai_pids = copy.deepcopy(self.pids)
-        final_idxs = []
+        final_idxs = []  # 数据加载器每一批次加载的样本索引顺序
         # 随机抽出k个id，每个id抽出一批索引加入final_idxs，并标记这些id
         while len(avai_pids) >= self.num_pids_per_batch:
             selected_pids = random.sample(avai_pids, self.num_pids_per_batch)
@@ -66,7 +67,7 @@ class RandomIdentitySampler(Sampler):
                 final_idxs.extend(batch_idxs)
                 if len(batch_idxs_dict[pid]) == 0:
                     avai_pids.remove(pid)
-
+        # 返回批次迭代器
         return iter(final_idxs)
 
     def __len__(self):

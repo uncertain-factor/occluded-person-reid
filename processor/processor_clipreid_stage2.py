@@ -14,8 +14,7 @@ from loss.supcontrast import SupConLoss
 def do_train_stage2(cfg,
                     model,
                     center_criterion,   # 该参数无作用
-                    whole_train_loader_stage2,
-                    occ_train_loader_stage2,
+                    train_loader_stage2,
                     val_loader,
                     optimizer,
                     optimizer_center,
@@ -54,14 +53,13 @@ def do_train_stage2(cfg,
     import time
     from datetime import timedelta
     all_start_time = time.monotonic()  # 时间记录器
-
-    # train
     batch = cfg.SOLVER.STAGE2.IMS_PER_BATCH  # batch大小
     # 计算实际批次i_ter
     i_ter = num_classes // batch
     left = num_classes - batch * (num_classes // batch)
     if left != 0:
         i_ter = i_ter + 1
+
     # 文本特征
     text_features = []
     with torch.no_grad():
@@ -89,7 +87,7 @@ def do_train_stage2(cfg,
 
         model.train()  # 将模型设计为训练模式
         # 按批次从数据加载器取出数据，其中图像数据经过了非常规预处理，然后训练模型
-        for n_iter, (img, vid, target_cam, target_view) in enumerate(train_loader_stage2):
+        for n_iter, (img1, img2, vid, target_cam, target_view) in enumerate(train_loader_stage2):
             # 清除模型优化器和中心损失优化器的梯度
             optimizer.zero_grad()
             optimizer_center.zero_grad()
@@ -107,10 +105,10 @@ def do_train_stage2(cfg,
                 target_view = None
             # 使用自动混合精度（Automatic Mixed Precision，AMP）进行计算，加速训练。
             with amp.autocast(enabled=True):
-                # 输入打乱的图像数据和标签得到一批图像数据预测真实标签的预测分数logits，
+                # 输入打乱的全身图像数据和标签得到一批图像数据预测真实标签的预测分数logits，
                 # 组合特征（图像编码器最后一个transformer输出，全部transformer输出，投影降维输出）和 投影降维图像特征
-                score, feat, image_features = model(x=img, label=target, cam_label=target_cam, view_label=target_view)
-                # 这里计算了投影降维图像特征与优化后的所有类别文本特征之间的点积,得到图像到文本类别的预测logits，【batch_size,num_class】。
+                score, feat, image_features = model(x=img1, label=target, cam_label=target_cam, view_label=target_view)
+                # 这里计算了投影降维图像特征与优化后的所有类别文本特征之间的点积,得到全身图像到文本类别的预测logits，【batch_size,num_class】。
                 logits = image_features @ text_features.t()
                 # 使用前面计算得到的图像到标签的预测分数logits、组合特征、真实标签、以及图像到文本类别的logits，计算阶段二的损失函数。
                 # 其中用score和target计算图像到真实标签的交叉熵损失，用feat和target计算图像特征之间的三元组损失，用logits和target计算图像到文本的交叉熵损失

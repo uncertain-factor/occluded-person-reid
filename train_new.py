@@ -68,7 +68,7 @@ if __name__ == '__main__':
     if cfg.MODEL.DIST_TRAIN:
         torch.distributed.init_process_group(backend='nccl', init_method='env://')
     # 获取训练阶段2的两个数据加载器（全身图增强，遮挡图不变），训练阶段1（常规处理），val验证集（query+gallery）的数据加载器，测试集的样本数量，训练集行人数，相机数，视图个数（1）
-    whole_train_loader_stage2, occ_train_loader_stage2, train_loader_stage1, val_loader, num_query, num_classes, camera_num, view_num = make_dataloader(cfg)
+    train_loader_stage2, train_loader_stage1, val_loader, num_query, num_classes, camera_num, view_num = make_dataloader(cfg)
     # 根据配置文件，行人，相机，视图个数建立模型，模型包含image部分（image encoder）和text部分（prompt learning和text encoder），可提取图像和文本特征
     model = make_model(cfg, num_class=num_classes, camera_num=camera_num, view_num=view_num)
     # 两个损失函数，一个是阶段二的loss_func（由三元组损失，交叉熵损失，图文相似度损失组成），一个是中心损失center_criterion
@@ -99,8 +99,7 @@ if __name__ == '__main__':
         cfg,
         model,
         center_criterion,
-        whole_train_loader_stage2,
-        occ_train_loader_stage2,
+        train_loader_stage2,
         val_loader,
         optimizer_2stage,
         optimizer_center_2stage,
