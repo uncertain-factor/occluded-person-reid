@@ -73,7 +73,7 @@ def do_train_stage2(cfg,
                 l_list = torch.arange(i * batch, num_classes)
             # 采用混合进度上下文管理，减小内存
             with amp.autocast(enabled=True):
-                # 提取每一批次的文本特征（经过阶段1优化的），并按顺序加入列表text_features
+                # 按批次提取文本特征（经过阶段1优化的），并按顺序加入列表text_features
                 text_feature = model(label=l_list, get_text=True)
             text_features.append(text_feature.cpu())
         # 将所有文本特征连接起来，然后移动到cuda
@@ -87,13 +87,14 @@ def do_train_stage2(cfg,
         scheduler.step()  # 调整优化器学习率
 
         model.train()  # 将模型设计为训练模式
-        # 按批次从数据加载器取出数据，其中图像数据经过了非常规预处理，然后训练模型
-        for n_iter, (img, vid, target_cam, target_view) in enumerate(train_loader_stage2):
+        # 按批次从数据加载器取出全身图和遮挡图的数据，其中图像数据经过了非常规预处理，然后训练模型
+        for n_iter, (img1, img2, vid, target_cam, target_view) in enumerate(train_loader_stage2):
             # 清除模型优化器和中心损失优化器的梯度
             optimizer.zero_grad()
             optimizer_center.zero_grad()
-            # 将图像和图像标签移动到设备上
-            img = img.to(device)
+            # 将图像和对应的标签移动到设备上
+            img1 = img1.to(device)
+            img2 = img2.to(device)
             target = vid.to(device)
             # igonre
             if cfg.MODEL.SIE_CAMERA:
@@ -106,14 +107,17 @@ def do_train_stage2(cfg,
                 target_view = None
             # 使用自动混合精度（Automatic Mixed Precision，AMP）进行计算，加速训练。
             with amp.autocast(enabled=True):
-                # 输入打乱的图像数据和标签得到一批图像数据预测真实标签的预测分数logits，
+                # 输入打乱的全身图像数据和标签得到一批图像数据预测真实标签的预测分数logits，
                 # 组合特征（图像编码器最后一个transformer输出，全部transformer输出，投影降维输出）和 投影降维图像特征
-                score, feat, image_features = model(x=img, label=target, cam_label=target_cam, view_label=target_view)
+                score, feat, image_features = model(x=img1, label=target, cam_label=target_cam, view_label=target_view)
                 # 这里计算了投影降维图像特征与优化后的所有类别文本特征之间的点积,得到图像到文本类别的预测logits，【batch_size,num_class】。
                 logits = image_features @ text_features.t()
+                # 提取全身图和遮挡图的投影特征
+                image1_feature_proj = model(img1, target, get_image=True)
+                image2_feature_proj = model(img2, target, get_image=True)
                 # 使用前面计算得到的图像到标签的预测分数logits、组合特征、真实标签、以及图像到文本类别的logits，计算阶段二的损失函数。
                 # 其中用score和target计算图像到真实标签的交叉熵损失，用feat和target计算图像特征之间的三元组损失，用logits和target计算图像到文本的交叉熵损失
-                loss = loss_fn(score, feat, target, target_cam, logits)
+                loss = loss_fn(score, feat, target, target_cam, logits, image1_feature_proj, image2_feature_proj, target, target)
             # 计算梯度，反向传播
             scaler.scale(loss).backward()
             # 更新优化器,同时更新模型权重参数，这里优化的参数主要是clip的图像编码器

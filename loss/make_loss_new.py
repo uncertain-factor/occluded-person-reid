@@ -32,6 +32,7 @@ def make_loss(cfg, num_classes):  # modified by gu
             return F.cross_entropy(score, target)
     # yes
     elif cfg.DATALOADER.SAMPLER == 'softmax_triplet':
+        # 输入全身图对标签的预测分数，全身图的组合特征，全身图标签，相机id，图像到文本的预测分数（点积），全身图+遮挡图的投影特征，全身图+遮挡图的标签
         # 计算总损失函数的计算，ID_LOSS使用的是图片-标签交叉熵损失，TRI_LOSS代表三元组损失，I2TLOSS使用的是图片-文本交叉熵损失，
         # CONTRAST_LOSS使用的是全身-遮挡对比损失
         def loss_func(score, feat, target, target_cam, i2tscore=None, whole_img_proj=None, occ_img_proj=None, whole_img_label=None, occ_img_label=None):
