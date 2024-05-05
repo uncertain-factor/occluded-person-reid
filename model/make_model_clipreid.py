@@ -117,7 +117,10 @@ class build_transformer(nn.Module):
         # 输入一批labels（行人id），通过文本提示优化器prompt learner获取对应的文本prompts模型参数，
         # 将prompts和tokenized_prompts通过文本编码器text encoder获取文本特征并返回
         if get_text == True:
-            prompts = self.prompt_learner(label)
+            prompts = self.prompt_learner(label)    # prompts形状为 (labels_size,len_prefix+n_ctx+len_suffix,512)
+            # print("point1")
+            print(self.prompt_learner.tokenized_prompts)
+            # print("point2")
             text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
             return text_features
         # 输入一批图像x，然后获取这批图像经过vit编码后的图像特征投影后的[cls]，作为图像的特征表示并返回
@@ -224,7 +227,7 @@ class PromptLearner(nn.Module):
         ctx_init = ctx_init.replace("_", " ")
         # 通用的context数
         n_ctx = 4
-        # 将文本转化为数字形式的token列表,并固定tokens长度为77
+        # 将[SOS]+文本+[EOS]转化为数字形式的token列表,,并固定tokens长度为77
         tokenized_prompts = clip.tokenize(ctx_init).cuda()
         # 不计算梯度（冻结该部分参数），对文本进行词嵌入，每个词被映射为纬度512的向量
         with torch.no_grad():
@@ -233,7 +236,7 @@ class PromptLearner(nn.Module):
         self.tokenized_prompts = tokenized_prompts  # torch.Tensor
         # 特定于类的context数（learnable token）
         n_cls_ctx = 4
-        # 创建张量容器存放每个行人对应的4个512维度的learnable token，形状为（num_class, n_cls_ctx=4, ctx_dim=512），然后用正态分布随机初始化
+        # 用正态分布随机初始化张量容器存放每个行人对应的4个512维度的learnable token，形状为（num_class, n_cls_ctx=4, ctx_dim=512），然后
         cls_vectors = torch.empty(num_class, n_cls_ctx, ctx_dim, dtype=dtype)
         nn.init.normal_(cls_vectors, std=0.02)
         self.cls_ctx = nn.Parameter(cls_vectors)  # 将每个行人的learnable tokens添加为模型参数，随着训练被优化
@@ -250,7 +253,7 @@ class PromptLearner(nn.Module):
     # 输入一个labels列表，构造对应的 prompts 模型参数并返回，prompts形状为 (labels_size,len_prefix+n_ctx+len_suffix,512)
     def forward(self, label):
         # 根据label(行人id)获取对应的learnable tokens 的模型参数,label 可能是一批而不是一个
-        cls_ctx = self.cls_ctx[label]  # （num_class, n_cls_ctx=4, ctx_dim=512）
+        cls_ctx = self.cls_ctx[label-1]  # （num_class, n_cls_ctx=4, ctx_dim=512）
         b = label.shape[0]  # 获取该批次的labels的数量
         # 扩展了模型中注册的名为 "token_prefix"和 "token_suffix" 的缓冲区，使其与输入批次中的标签数量相匹配。
         prefix = self.token_prefix.expand(b, -1, -1)

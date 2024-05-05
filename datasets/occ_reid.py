@@ -28,6 +28,7 @@ class OCC_ReID(BaseImageDataset):
         # 获取数据集的文件路径：/home/zyj/workspace/workspace/CLIP-ReID-zhy/
         super(OCC_ReID, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
+
         # 全身图训练集
         self.whole_train_dir = osp.join(self.dataset_dir, 'whole_train')
         # 遮挡图训练集
@@ -45,11 +46,6 @@ class OCC_ReID(BaseImageDataset):
         occ_train = self._process_dir(self.occ_train_dir, relabel=False)
         query = self._process_dir(self.query_dir, relabel=False)
         gallery = self._process_dir(self.gallery_dir, relabel=False)
-
-        # 输出具体日志
-        # if verbose:
-        #     print("=> DukeMTMC-reID loaded")
-        #     self.print_dataset_statistics(train, query, gallery)
 
         self.whole_train = whole_train
         self.occ_train = occ_train
@@ -80,7 +76,7 @@ class OCC_ReID(BaseImageDataset):
     # 创建数据集列表，item为（图像绝对路径，行人id，相机id，1），根据relabel选择是否重置行人id
     def _process_dir(self, dir_path, relabel=False):
         img_paths = glob.glob(osp.join(dir_path, '*.tif'))  # 获取所有图像路径
-        pattern = re.compile(r'([-\d]+)_(\d)')  # 创建正则表达式 匹配图像名：161_01.tif
+        pattern = re.compile(r'([-\d]+)_0(\d)')  # 创建正则表达式 匹配图像名：161_01.tif
         # 对于所有图像，提取出人物id，转换为int类型然后装进set集合中，最后创建id和label的映射{key：pid，value：label}
         pid_container = set()
         for img_path in img_paths:
@@ -100,5 +96,4 @@ class OCC_ReID(BaseImageDataset):
             if relabel: pid = pid2label[pid]  # 如何设置了relabel，将pid转化为从0开始且连续的label
             dataset.append((img_path, self.pid_begin + pid, camid, 1))
             cam_container.add(camid)
-        print(cam_container, 'cam_container')
         return dataset

@@ -87,6 +87,7 @@ def make_dataloader(cfg):
                                  transform2=val_transforms)
     # 进行了常规处理的训练集（用于阶段一）
     train_set_whole_normal = ImageDataset(dataset.whole_train, val_transforms)
+
     num_classes = dataset.num_train_pids    # 训练集行人id数
     cam_num = dataset.num_train_cams    # 训练集相机数
     view_num = dataset.num_train_vids   # 训练集视图数

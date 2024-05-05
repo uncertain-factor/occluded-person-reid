@@ -39,12 +39,13 @@ def do_train_stage1(cfg,
     import time
     from datetime import timedelta
     all_start_time = time.monotonic()  # 启动秒表，记录时间
-    logger.info("model: {}".format(model))
+    # logger.info("model: {}".format(model))
     image_features = []  # 图像特征
     labels = []  # 标签
     with torch.no_grad():  # 不追踪梯度
         # 获取每个批次的数据，包括图像，行人id，相机id，视图
         for n_iter, (img, vid, target_cam, target_view) in enumerate(train_loader_stage1):
+            # print(vid)
             # 将当前batch的图像数据和行人id（即标签）移动到设备上
             img = img.to(device)
             target = vid.to(device)
@@ -52,10 +53,12 @@ def do_train_stage1(cfg,
             with amp.autocast(enabled=True):
                 # 提取当前batch的图像特征
                 image_feature = model(img, target, get_image=True)
+                # print("debug point2")
                 # 将标签和图像特征加入labels和image_features列表，其中图像特征保存在cpu
                 for i, img_feat in zip(target, image_feature):
                     labels.append(i)
                     image_features.append(img_feat.cpu())
+                # print("debug point2")
         # 将各个批次的图像标签堆叠成张量，然后移动到gpu，形状为[batch_num*batch_size,label_dim]
         labels_list = torch.stack(labels, dim=0).cuda()
         # 将各个批次的图像特征堆叠成张量，然后移动到gpu，形状为[batch_num*batch_size,feat_dim]
@@ -67,6 +70,7 @@ def do_train_stage1(cfg,
     del labels, image_features  # 删除引用，释放内存
     # 对于每个epoch，从1到epoch
     for epoch in range(1, epochs + 1):
+        print("epoch: " + str(epoch))
         loss_meter.reset()  # 重置损失计量器
         scheduler.step(epoch)  # 调度器根据周期数调整优化器的学习率
         model.train()  # 将模型设置为训练模式，确保所有的层（如Dropout和BatchNorm）都以训练模式运行。
@@ -74,6 +78,7 @@ def do_train_stage1(cfg,
         iter_list = torch.randperm(num_image).to(device)
         # 对于每个batch，从0到batch_num
         for i in range(i_ter + 1):
+            print("batch: "+str(i)+"start")
             optimizer.zero_grad()
             # 按顺序取出batch_size个索引，对于最后一个batch，数量可能不足batch_size
             if i != i_ter:
@@ -83,13 +88,15 @@ def do_train_stage1(cfg,
             # 根据索引可找到在labels_list中对应的图像标签和图像特征，即提取当前批次的图像标签和特征
             target = labels_list[b_list]
             image_features = image_features_list[b_list]
+            print(target)
             with amp.autocast(enabled=True):
                 # 获取图像标签对应的相同数量的文本特征
                 text_features = model(label=target, get_text=True)
+            # print("debug point3")
             # 计算两个方向的损失（从图像到文本和从文本到图像）
             loss_i2t = xent(image_features, text_features, target, target)
             loss_t2i = xent(text_features, image_features, target, target)
-
+            # print("debug point4")
             loss = loss_i2t + loss_t2i
             # 使用自动混合精度的scaler对象
             scaler.scale(loss).backward()  # 按比例缩放loss，然后计算并反向传播损失的梯度
@@ -104,6 +111,7 @@ def do_train_stage1(cfg,
                 logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Base Lr: {:.2e}"
                             .format(epoch, (i + 1), len(train_loader_stage1),
                                     loss_meter.avg, scheduler._get_lr(epoch)[0]))
+            print("batch: " + str(i) + "end")
         # 每checkpoint_period（120）个周期，保存模型的当前状态字典。
         if epoch % checkpoint_period == 0:
             # no 分布式训练
