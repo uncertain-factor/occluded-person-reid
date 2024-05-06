@@ -80,6 +80,7 @@ def do_train_stage2(cfg,
         text_features = torch.cat(text_features, 0).cuda()
     # 进行每个epoch的循环训练
     for epoch in range(1, epochs + 1):
+        print("epoch" + str(epoch) + "start")
         start_time = time.time()  # 开始计时
         loss_meter.reset()  # 重置损失
         acc_meter.reset()  # 重置正确率
@@ -89,13 +90,16 @@ def do_train_stage2(cfg,
         model.train()  # 将模型设计为训练模式
         # 按批次从数据加载器取出全身图和遮挡图的数据，其中图像数据经过了非常规预处理，然后训练模型
         for n_iter, (img1, img2, vid, target_cam, target_view) in enumerate(train_loader_stage2):
+            print("batch"+str(n_iter)+"start")
             # 清除模型优化器和中心损失优化器的梯度
             optimizer.zero_grad()
             optimizer_center.zero_grad()
+            # print("check point1")
             # 将图像和对应的标签移动到设备上
             img1 = img1.to(device)
             img2 = img2.to(device)
             target = vid.to(device)
+            # print("check point2")
             # igonre
             if cfg.MODEL.SIE_CAMERA:
                 target_cam = target_cam.to(device)
@@ -118,11 +122,13 @@ def do_train_stage2(cfg,
                 # 使用前面计算得到的图像到标签的预测分数logits、组合特征、真实标签、以及图像到文本类别的logits，计算阶段二的损失函数。
                 # 其中用score和target计算图像到真实标签的交叉熵损失，用feat和target计算图像特征之间的三元组损失，用logits和target计算图像到文本的交叉熵损失
                 loss = loss_fn(score, feat, target, target_cam, logits, image1_feature_proj, image2_feature_proj, target, target)
+            # print("check point3")
             # 计算梯度，反向传播
             scaler.scale(loss).backward()
             # 更新优化器,同时更新模型权重参数，这里优化的参数主要是clip的图像编码器
             scaler.step(optimizer)
             scaler.update()  # 在每个批次后更新缩放因子
+            # print("check point4")
             # no
             if 'center' in cfg.MODEL.METRIC_LOSS_TYPE:
                 for param in center_criterion.parameters():
@@ -136,6 +142,7 @@ def do_train_stage2(cfg,
             acc_meter.update(acc, 1)  # 更新正确率
             # 同步cuda
             torch.cuda.synchronize()
+            print("batch" + str(n_iter) + "end")
             # 每到一定批次输出日志
             if (n_iter + 1) % log_period == 0:
                 logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Acc: {:.3f}, Base Lr: {:.2e}"

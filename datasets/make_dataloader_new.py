@@ -93,7 +93,7 @@ def make_dataloader(cfg):
     view_num = dataset.num_train_vids   # 训练集视图数
 
     if 'triplet' in cfg.DATALOADER.SAMPLER:
-        # 为训练阶段2创建数据加载器，数据集为PairImageDataSet,随机取样，每批次样本为50
+        # 为训练阶段2创建数据加载器，数据集为PairImageDataSet,随机取样
         train_loader_stage2 = DataLoader(
             train_set,
             batch_size=cfg.SOLVER.STAGE2.IMS_PER_BATCH,
