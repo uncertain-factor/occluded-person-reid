@@ -22,7 +22,7 @@ def do_train_stage1(cfg,
     log_period = cfg.SOLVER.STAGE1.LOG_PERIOD  # 50
 
     logger = logging.getLogger("transreid.train")
-    logger.info('start training')
+    logger.info('start training stage1')
     _LOCAL_PROCESS_GROUP = None
     if device:
         model.to(local_rank)  # 在对应的显卡上训练
@@ -76,9 +76,9 @@ def do_train_stage1(cfg,
         model.train()  # 将模型设置为训练模式，确保所有的层（如Dropout和BatchNorm）都以训练模式运行。
         # 将索引打乱后存放在列表中，并移动到指定设备上
         iter_list = torch.randperm(num_image).to(device)
-        # 对于每个batch，从0到batch_num
-        for i in range(i_ter + 1):
-            print("batch: "+str(i)+"start")
+        # 对于每个batch，从0到batch_num, execute batch_num times in total
+        for i in range(i_ter):
+            # print("batch: "+str(i)+"start")
             optimizer.zero_grad()
             # 按顺序取出batch_size个索引，对于最后一个batch，数量可能不足batch_size
             if i != i_ter:
@@ -88,7 +88,7 @@ def do_train_stage1(cfg,
             # 根据索引可找到在labels_list中对应的图像标签和图像特征，即提取当前批次的图像标签和特征
             target = labels_list[b_list]
             image_features = image_features_list[b_list]
-            print(target)
+            # print(target)
             with amp.autocast(enabled=True):
                 # 获取图像标签对应的相同数量的文本特征
                 text_features = model(label=target, get_text=True)
@@ -111,7 +111,7 @@ def do_train_stage1(cfg,
                 logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Base Lr: {:.2e}"
                             .format(epoch, (i + 1), len(train_loader_stage1),
                                     loss_meter.avg, scheduler._get_lr(epoch)[0]))
-            print("batch: " + str(i) + "end")
+            # print("batch: " + str(i) + "end")
         # 每checkpoint_period（120）个周期，保存模型的当前状态字典。
         if epoch % checkpoint_period == 0:
             # no 分布式训练

@@ -35,13 +35,13 @@ SOLVER:
     WARMUP_METHOD: 'linear'
     WEIGHT_DECAY:  1e-4
     WEIGHT_DECAY_BIAS: 1e-4
-    MAX_EPOCHS: 120
+    MAX_EPOCHS: 50
     CHECKPOINT_PERIOD: 120
     LOG_PERIOD: 10  # 输出日志的batch周期，原本为50
     WARMUP_EPOCHS: 5
 
   STAGE2:
-    IMS_PER_BATCH: 50 # 阶段二数据加载器的每个采样批次的大小为30，取10个id的5张照片，原本是64
+    IMS_PER_BATCH: 32 # 阶段二数据加载器的每个采样批次的大小为30，取10个id的5张照片，原本是64
     OPTIMIZER_NAME: "Adam"
     BASE_LR: 0.000005
     WARMUP_METHOD: 'linear'

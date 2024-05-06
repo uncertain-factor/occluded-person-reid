@@ -30,7 +30,7 @@ def do_train_stage2(cfg,
     epochs = cfg.SOLVER.STAGE2.MAX_EPOCHS  # epoch数
 
     logger = logging.getLogger("transreid.train")
-    logger.info('start training')
+    logger.info('start training stage2')
     _LOCAL_PROCESS_GROUP = None
     if device:
         # 将模型移动到指定设备
@@ -79,6 +79,7 @@ def do_train_stage2(cfg,
         text_features = torch.cat(text_features, 0).cuda()
     # 进行每个epoch的循环训练
     for epoch in range(1, epochs + 1):
+        print("epoch: " + str(epoch))
         start_time = time.time()  # 开始计时
         loss_meter.reset()  # 重置损失
         acc_meter.reset()  # 重置正确率
@@ -88,11 +89,12 @@ def do_train_stage2(cfg,
         model.train()  # 将模型设计为训练模式
         # 按批次从数据加载器取出数据，其中图像数据经过了非常规预处理，然后训练模型
         for n_iter, (img1, img2, vid, target_cam, target_view) in enumerate(train_loader_stage2):
+            print("batch:"+str(n_iter)+"start")
             # 清除模型优化器和中心损失优化器的梯度
             optimizer.zero_grad()
             optimizer_center.zero_grad()
             # 将图像和图像标签移动到设备上
-            img = img.to(device)
+            img1 = img1.to(device)
             target = vid.to(device)
             # igonre
             if cfg.MODEL.SIE_CAMERA:
@@ -131,6 +133,7 @@ def do_train_stage2(cfg,
             acc_meter.update(acc, 1)  # 更新正确率
             # 同步cuda
             torch.cuda.synchronize()
+            print("batch:" + str(n_iter) + "end")
             # 每到一定批次输出日志
             if (n_iter + 1) % log_period == 0:
                 logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Acc: {:.3f}, Base Lr: {:.2e}"

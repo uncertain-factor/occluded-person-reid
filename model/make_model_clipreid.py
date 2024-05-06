@@ -119,7 +119,7 @@ class build_transformer(nn.Module):
         if get_text == True:
             prompts = self.prompt_learner(label)    # prompts形状为 (labels_size,len_prefix+n_ctx+len_suffix,512)
             # print("point1")
-            print(self.prompt_learner.tokenized_prompts)
+            # print(self.prompt_learner.tokenized_prompts)
             # print("point2")
             text_features = self.text_encoder(prompts, self.prompt_learner.tokenized_prompts)
             return text_features

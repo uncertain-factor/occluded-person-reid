@@ -104,7 +104,7 @@ class PairImageDataset(Dataset):
         img1 = read_image(img_path1)
         img2 = read_image(img_path2)
         if self.transform1 is not None:
-            img1 = self.transform(img1)
+            img1 = self.transform1(img1)
         if self.transform2 is not None:
-            img2 = self.transform(img2)
+            img2 = self.transform2(img2)
         return img1, img2, pid1, camid1, trackid1, img_path1.split('/')[-1]
