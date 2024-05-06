@@ -132,7 +132,7 @@ def do_train_stage2(cfg,
             # 计算图像预测文本标签平均正确率
             acc = (logits.max(1)[1] == target).float().mean()
             # 更新损失
-            loss_meter.update(loss.item(), img.shape[0])
+            loss_meter.update(loss.item(), img1.shape[0])
             acc_meter.update(acc, 1)  # 更新正确率
             # 同步cuda
             torch.cuda.synchronize()

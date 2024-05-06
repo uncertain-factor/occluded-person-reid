@@ -27,7 +27,7 @@ DATALOADER:
 
 SOLVER:
   STAGE1:
-    IMS_PER_BATCH: 32 # 原本是64
+    IMS_PER_BATCH: 25 # 原本是64
     OPTIMIZER_NAME: "Adam"
     BASE_LR: 0.00035
     WARMUP_LR_INIT: 0.00001
@@ -36,12 +36,12 @@ SOLVER:
     WEIGHT_DECAY:  1e-4
     WEIGHT_DECAY_BIAS: 1e-4
     MAX_EPOCHS: 50
-    CHECKPOINT_PERIOD: 120
-    LOG_PERIOD: 10  # 输出日志的batch周期，原本为50
+    CHECKPOINT_PERIOD: 50
+    LOG_PERIOD: 16  # 输出日志的batch周期，原本为50
     WARMUP_EPOCHS: 5
 
   STAGE2:
-    IMS_PER_BATCH: 32 # 阶段二数据加载器的每个采样批次的大小为30，取10个id的5张照片，原本是64
+    IMS_PER_BATCH: 25 # 阶段二数据加载器的每个采样批次的大小为30，取10个id的5张照片，原本是64
     OPTIMIZER_NAME: "Adam"
     BASE_LR: 0.000005
     WARMUP_METHOD: 'linear'
@@ -51,8 +51,8 @@ SOLVER:
     WEIGHT_DECAY_BIAS: 0.0001
     LARGE_FC_LR: False
     MAX_EPOCHS: 60
-    CHECKPOINT_PERIOD: 60
-    LOG_PERIOD: 50
+    CHECKPOINT_PERIOD: 16
+    LOG_PERIOD: 16
     EVAL_PERIOD: 60
     BIAS_LR_FACTOR: 2
 
@@ -61,7 +61,7 @@ SOLVER:
 
 TEST:
   EVAL: True
-  IMS_PER_BATCH: 32
+  IMS_PER_BATCH: 25
   RE_RANKING: False
   WEIGHT: ''
   NECK_FEAT: 'before'

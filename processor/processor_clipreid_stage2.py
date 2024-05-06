@@ -79,22 +79,20 @@ def do_train_stage2(cfg,
         text_features = torch.cat(text_features, 0).cuda()
     # 进行每个epoch的循环训练
     for epoch in range(1, epochs + 1):
-        print("epoch: " + str(epoch))
         start_time = time.time()  # 开始计时
         loss_meter.reset()  # 重置损失
         acc_meter.reset()  # 重置正确率
         evaluator.reset()  # 重置评估器
         scheduler.step()  # 调整优化器学习率
 
-        model.train()  # 将模型设计为训练模式
-        # 按批次从数据加载器取出数据，其中图像数据经过了非常规预处理，然后训练模型
-        for n_iter, (img1, img2, vid, target_cam, target_view) in enumerate(train_loader_stage2):
-            print("batch:"+str(n_iter)+"start")
+        scheduler.step()
+
+        model.train()   # 将模型设计为训练模式
+        for n_iter, (img, vid, target_cam, target_view) in enumerate(train_loader_stage2):
             # 清除模型优化器和中心损失优化器的梯度
             optimizer.zero_grad()
             optimizer_center.zero_grad()
-            # 将图像和图像标签移动到设备上
-            img1 = img1.to(device)
+            img = img.to(device)
             target = vid.to(device)
             # igonre
             if cfg.MODEL.SIE_CAMERA:
@@ -109,7 +107,7 @@ def do_train_stage2(cfg,
             with amp.autocast(enabled=True):
                 # 输入打乱的全身图像数据和标签得到一批图像数据预测真实标签的预测分数logits，
                 # 组合特征（图像编码器最后一个transformer输出，全部transformer输出，投影降维输出）和 投影降维图像特征
-                score, feat, image_features = model(x=img1, label=target, cam_label=target_cam, view_label=target_view)
+                score, feat, image_features = model(x=img, label=target, cam_label=target_cam, view_label=target_view)
                 # 这里计算了投影降维图像特征与优化后的所有类别文本特征之间的点积,得到全身图像到文本类别的预测logits，【batch_size,num_class】。
                 logits = image_features @ text_features.t()
                 # 使用前面计算得到的图像到标签的预测分数logits、组合特征、真实标签、以及图像到文本类别的logits，计算阶段二的损失函数。
@@ -133,7 +131,6 @@ def do_train_stage2(cfg,
             acc_meter.update(acc, 1)  # 更新正确率
             # 同步cuda
             torch.cuda.synchronize()
-            print("batch:" + str(n_iter) + "end")
             # 每到一定批次输出日志
             if (n_iter + 1) % log_period == 0:
                 logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Acc: {:.3f}, Base Lr: {:.2e}"
@@ -157,7 +154,6 @@ def do_train_stage2(cfg,
                     torch.save(model.state_dict(),
                                os.path.join(cfg.OUTPUT_DIR, cfg.MODEL.NAME + '_{}.pth'.format(epoch)))
             else:
-
                 torch.save(model.state_dict(),
                            os.path.join(cfg.OUTPUT_DIR, cfg.MODEL.NAME + '_{}.pth'.format(epoch)))
         # 每迭代eval_period个epoch

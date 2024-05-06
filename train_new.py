@@ -6,7 +6,7 @@ from solver.scheduler_factory import create_scheduler
 from solver.lr_scheduler import WarmupMultiStepLR
 from loss.make_loss_new import make_loss
 from processor.processor_clipreid_stage1 import do_train_stage1
-from processor.processor_clipreid_stage2 import do_train_stage2
+from processor.processor_clipreid_stage2_new import do_train_stage2
 import random
 import torch
 import numpy as np
