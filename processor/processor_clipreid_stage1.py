@@ -70,7 +70,7 @@ def do_train_stage1(cfg,
     del labels, image_features  # 删除引用，释放内存
     # 对于每个epoch，从1到epoch
     for epoch in range(1, epochs + 1):
-        print("epoch: " + str(epoch))
+        # print("epoch: " + str(epoch))
         loss_meter.reset()  # 重置损失计量器
         scheduler.step(epoch)  # 调度器根据周期数调整优化器的学习率
         model.train()  # 将模型设置为训练模式，确保所有的层（如Dropout和BatchNorm）都以训练模式运行。

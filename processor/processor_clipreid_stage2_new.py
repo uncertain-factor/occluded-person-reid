@@ -91,6 +91,7 @@ def do_train_stage2(cfg,
         # 按批次从数据加载器取出全身图和遮挡图的数据，其中图像数据经过了非常规预处理，然后训练模型
         for n_iter, (img1, img2, vid, target_cam, target_view) in enumerate(train_loader_stage2):
             print("batch"+str(n_iter)+"start")
+            # print(vid)
             # 清除模型优化器和中心损失优化器的梯度
             optimizer.zero_grad()
             optimizer_center.zero_grad()
@@ -142,7 +143,7 @@ def do_train_stage2(cfg,
             acc_meter.update(acc, 1)  # 更新正确率
             # 同步cuda
             torch.cuda.synchronize()
-            print("batch" + str(n_iter) + "end")
+            # print("batch" + str(n_iter) + "end")
             # 每到一定批次输出日志
             if (n_iter + 1) % log_period == 0:
                 logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Acc: {:.3f}, Base Lr: {:.2e}"

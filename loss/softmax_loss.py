@@ -30,6 +30,7 @@ class CrossEntropyLabelSmooth(nn.Module):
             targets: ground truth labels with shape (num_classes)
         """
         log_probs = self.logsoftmax(inputs)  # 计算log softmax后的预测矩阵
+        targets = targets - 1
         targets = torch.zeros(log_probs.size()).scatter_(1, targets.unsqueeze(1).data.cpu(), 1)  # 根据标签制作one-hot标签矩阵
         if self.use_gpu: targets = targets.cuda()
         targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes  # 对标签矩阵进行平滑处理
