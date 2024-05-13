@@ -43,7 +43,7 @@ def do_train_stage2(cfg,
             num_classes = model.num_classes  # 指定行人总数
     # 损失和准确率的计量器
     loss_meter = AverageMeter()
-    acc_meter = AverageMeter()
+    # acc_meter = AverageMeter()
     # 创建一个评估器对象，用于评估模型性能。输入测试集的样本数量，yes
     evaluator = R1_mAP_eval(num_query, max_rank=50, feat_norm=cfg.TEST.FEAT_NORM)
     scaler = amp.GradScaler()  # 创建一个用于混合精度训练的 GradScaler 对象
@@ -62,28 +62,28 @@ def do_train_stage2(cfg,
     if left != 0:
         i_ter = i_ter + 1
     # 文本特征
-    text_features = []
-    with torch.no_grad():
-        # 该部分不计算梯度
-        for i in range(i_ter):
-            # 根据批次获取索引列表
-            if i + 1 != i_ter:
-                l_list = torch.arange(i * batch, (i + 1) * batch)
-            else:
-                l_list = torch.arange(i * batch, num_classes)
-            # 采用混合进度上下文管理，减小内存
-            with amp.autocast(enabled=True):
-                # 按批次提取文本特征（经过阶段1优化的），并按顺序加入列表text_features
-                text_feature = model(label=l_list, get_text=True)
-            text_features.append(text_feature.cpu())
-        # 将所有文本特征连接起来，然后移动到cuda
-        text_features = torch.cat(text_features, 0).cuda()
+    # text_features = []
+    # with torch.no_grad():
+    #     # 该部分不计算梯度
+    #     for i in range(i_ter):
+    #         # 根据批次获取索引列表
+    #         if i + 1 != i_ter:
+    #             l_list = torch.arange(i * batch, (i + 1) * batch)
+    #         else:
+    #             l_list = torch.arange(i * batch, num_classes)
+    #         # 采用混合进度上下文管理，减小内存
+    #         with amp.autocast(enabled=True):
+    #             # 按批次提取文本特征（经过阶段1优化的），并按顺序加入列表text_features
+    #             text_feature = model(label=l_list, get_text=True)
+    #         text_features.append(text_feature.cpu())
+    #     # 将所有文本特征连接起来，然后移动到cuda
+    #     text_features = torch.cat(text_features, 0).cuda()
     # 进行每个epoch的循环训练
     for epoch in range(1, epochs + 1):
         print("epoch" + str(epoch) + "start")
         start_time = time.time()  # 开始计时
         loss_meter.reset()  # 重置损失
-        acc_meter.reset()  # 重置正确率
+        # acc_meter.reset()  # 重置正确率
         evaluator.reset()  # 重置评估器
         scheduler.step()  # 调整优化器学习率
 
@@ -116,13 +116,13 @@ def do_train_stage2(cfg,
                 # 组合特征（图像编码器最后一个transformer输出，全部transformer输出，投影降维输出）和 投影降维图像特征
                 score, feat, image_features = model(x=img1, label=target, cam_label=target_cam, view_label=target_view)
                 # 这里计算了投影降维图像特征与优化后的所有类别文本特征之间的点积,得到图像到文本类别的预测logits，【batch_size,num_class】。
-                logits = image_features @ text_features.t()
+                # logits = image_features @ text_features.t()
                 # 提取全身图和遮挡图的投影特征
                 image1_feature_proj = model(img1, target, get_image=True)
                 image2_feature_proj = model(img2, target, get_image=True)
                 # 使用前面计算得到的图像到标签的预测分数logits、组合特征、真实标签、以及图像到文本类别的logits，计算阶段二的损失函数。
                 # 其中用score和target计算图像到真实标签的交叉熵损失，用feat和target计算图像特征之间的三元组损失，用logits和target计算图像到文本的交叉熵损失
-                loss = loss_fn(score, feat, target, target_cam, logits, image1_feature_proj, image2_feature_proj, target, target)
+                loss = loss_fn(score, feat, target, target_cam, image1_feature_proj, image2_feature_proj, target, target)
             # print("check point3")
             # 计算梯度，反向传播
             scaler.scale(loss).backward()
@@ -130,25 +130,20 @@ def do_train_stage2(cfg,
             scaler.step(optimizer)
             scaler.update()  # 在每个批次后更新缩放因子
             # print("check point4")
-            # no
-            if 'center' in cfg.MODEL.METRIC_LOSS_TYPE:
-                for param in center_criterion.parameters():
-                    param.grad.data *= (1. / cfg.SOLVER.CENTER_LOSS_WEIGHT)
-                scaler.step(optimizer_center)
-                scaler.update()
+
             # 计算图像预测文本标签平均正确率
-            acc = (logits.max(1)[1] == target).float().mean()
+            # acc = (logits.max(1)[1] == target).float().mean()
             # 更新损失
             loss_meter.update(loss.item(), img1.shape[0])
-            acc_meter.update(acc, 1)  # 更新正确率
+            # acc_meter.update(acc, 1)  # 更新正确率
             # 同步cuda
             torch.cuda.synchronize()
             # print("batch" + str(n_iter) + "end")
             # 每到一定批次输出日志
             if (n_iter + 1) % log_period == 0:
-                logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f}, Acc: {:.3f}, Base Lr: {:.2e}"
+                logger.info("Epoch[{}] Iteration[{}/{}] Loss: {:.3f},  Base Lr: {:.2e}"
                             .format(epoch, (n_iter + 1), len(train_loader_stage2),
-                                    loss_meter.avg, acc_meter.avg, scheduler.get_lr()[0]))
+                                    loss_meter.avg, scheduler.get_lr()[0]))
         # 计算耗时
         end_time = time.time()
         # 平均每批次耗时

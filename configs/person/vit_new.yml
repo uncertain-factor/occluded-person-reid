@@ -23,7 +23,7 @@ INPUT:
 DATALOADER:
   SAMPLER: 'softmax_triplet'
   NUM_INSTANCE: 5 #每个身份选择的样本数量,原本是4
-  NUM_WORKERS: 5  #数据加载的进程数，原本是8
+  NUM_WORKERS: 0  #数据加载的进程数，原本是8
 
 SOLVER:
   STAGE1:
@@ -53,7 +53,7 @@ SOLVER:
     MAX_EPOCHS: 60
     CHECKPOINT_PERIOD: 16
     LOG_PERIOD: 16
-    EVAL_PERIOD: 60
+    EVAL_PERIOD: 30
     BIAS_LR_FACTOR: 2
 
     STEPS: [30, 50]
