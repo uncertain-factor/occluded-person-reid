@@ -227,7 +227,7 @@ class PromptLearner(nn.Module):
         ctx_init = ctx_init.replace("_", " ")
         # 通用的context数
         n_ctx = 4
-        # 将[SOS]+文本+[EOS]转化为数字形式的token列表,,并固定tokens长度为77
+        # 将[SOS]+文本+[EOS]转化为数字形式的token列表, 并固定tokens长度为77
         tokenized_prompts = clip.tokenize(ctx_init).cuda()
         # 不计算梯度（冻结该部分参数），对文本进行词嵌入，每个词被映射为纬度512的向量
         with torch.no_grad():
